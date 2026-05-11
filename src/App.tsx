@@ -5,48 +5,135 @@ function App() {
   const api = useAPI();
   const [status, setStatus] = useState('Ready');
 
-  const testAlert = () => {
-    api.alerts.show("Hello from tiaframe!", "System Test");
-  };
+  const gameHtml = `
+    <!DOCTYPE html>
+    <html lang="en-us">
+      <head>
+        <base href="https://cdn.jsdelivr.net/gh/web-ports/jsab@main/">
+        <meta charset="utf-8">
+        <style>
+          body { cursor: url('Cursor.png'), auto; background-color: black; margin: 0; padding: 0; overflow: hidden; height: 100vh; }
+          #unityContainer { width: 100vw !important; height: 100vh !important; }
+          canvas { width: 100% !important; height: 100% !important; }
+          #loading-text {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 999999;
+            font-size: 48px; font-family: cursive; font-weight: bold; pointer-events: none;
+            background: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff);
+            background-size: 400% 400%; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: rainbow 3s ease infinite;
+          }
+          @keyframes rainbow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        </style>
+        <script src="TemplateData/UnityProgress.js"></script>
+        <script src="Build/UnityLoader.js"></script>
+      </head>
+      <body>
+        <div id="loading-text">LOADING...</div>
+        <div class="webgl-content"><div id="unityContainer"></div></div>
+        <script>
+          const loadingText = document.querySelector("#loading-text");
+          let loadedBytes = 0;
 
-  const testFS = async () => {
-    try {
-      const files = await api.fs.ls('/');
-      setStatus(`Found ${files.length} files in /`);
-    } catch (e: any) {
-      setStatus(`Error: ${e.message}`);
-    }
-  };
+          async function fetchWithProgress(url) {
+            const response = await fetch(url);
+            const reader = response.body.getReader();
+            let chunks = [];
+            let received = 0;
+            while (true) {
+              const {done, value} = await reader.read();
+              if (done) break;
+              received += value.length;
+              loadedBytes += value.length;
+              chunks.push(value);
+              loadingText.textContent = \`LOADING... \${(loadedBytes / (1024 * 1024)).toFixed(2)} MB / 132.83 MB\`;
+            }
+            let fullBuffer = new Uint8Array(received);
+            let offset = 0;
+            for (let chunk of chunks) { fullBuffer.set(chunk, offset); offset += chunk.length; }
+            return fullBuffer.buffer;
+          }
+
+          async function mergeFiles(fileParts, cacheKey) {
+            const cache = await caches.open("jsab-cache");
+            const cachedResponse = await cache.match(cacheKey);
+            if (cachedResponse) {
+              const blob = await cachedResponse.blob();
+              return URL.createObjectURL(blob);
+            }
+            const buffers = await Promise.all(fileParts.map(part => fetchWithProgress(part)));
+            const mergedBlob = new Blob(buffers);
+            const response = new Response(mergedBlob);
+            await cache.put(cacheKey, response);
+            return URL.createObjectURL(mergedBlob);
+          }
+
+          function getParts(file, start, end) {
+            let parts = [];
+            for (let i = start; i <= end; i++) { parts.push(file + ".part" + i); }
+            return parts;
+          }
+
+          (async () => {
+            const [dataUrl, wasmUrl, bundle] = await Promise.all([
+              mergeFiles(getParts("Build/jsab.data.unityweb", 1, 4), "jsab.data.unityweb"),
+              mergeFiles(getParts("Build/jsab.wasm.code.unityweb", 1, 2), "jsab.wasm.code.unityweb"),
+              mergeFiles(getParts("StreamingAssets/aa/WebGL/fonts_tmp_assets_all_c2712a523e390d12249a703a5257c93b.bundle", 1, 3), "fonts_tmp_assets_all_c2712a523e390d12249a703a5257c93b.bundle"),
+            ]);
+
+            const originalOpen = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+              if (url.includes("jsab.data.unityweb")) url = dataUrl;
+              else if (url.includes("jsab.wasm.code.unityweb")) url = wasmUrl;
+              else if (url.includes("fonts_tmp_assets_all_c2712a523e390d12249a703a5257c93b.bundle")) url = bundle;
+              return originalOpen.call(this, method, url, ...rest);
+            };
+
+            var unityInstance = UnityLoader.instantiate("unityContainer", "Build/jsab.json", {onProgress: UnityProgress});
+            loadingText.style.display = "none";
+          })();
+        </script>
+      </body>
+    </html>
+  `;
 
   return (
     <div style={{ 
-      padding: 24, background: '#0e0e18', color: '#e8e8f0', height: '100%', width: '100%',
-      fontFamily: 'Segoe UI, Roboto, sans-serif'
+      display: 'flex', flexDirection: 'column',
+      background: '#0e0e18', color: '#e8e8f0', height: '100vh', width: '100vw',
+      fontFamily: 'Segoe UI, Roboto, sans-serif', overflow: 'hidden'
     }}>
-      <h1>tiPRO Custom App</h1>
-      <p>Status: <span style={{ color: '#8ab4f8' }}>{status}</span></p>
+      <div style={{ padding: '10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1a1b26' }}>
+        <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Just Shapes & Beats (tiPRO)</h2>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button onClick={() => api.alerts.show("Game logic is running in the frame below.", "tiPRO Info")} style={btnStyle}>
+            Info
+          </button>
+          <button onClick={() => setStatus('Playing')} style={btnStyle}>
+            Status: {status}
+          </button>
+        </div>
+      </div>
       
-      <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-        <button 
-          onClick={testAlert}
-          style={btnStyle}
-        >
-          Test Alert
-        </button>
-        <button 
-          onClick={testFS}
-          style={btnStyle}
-        >
-          Test File System
-        </button>
+      <div style={{ flex: 1, position: 'relative' }}>
+        <iframe
+          title="JSAB Game"
+          srcDoc={gameHtml}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            display: 'block'
+          }}
+          sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+        />
       </div>
     </div>
   );
 }
 
 const btnStyle: React.CSSProperties = {
-  background: '#8ab4f8', border: 'none', color: '#1a1b1e', padding: '10px 16px',
-  borderRadius: 8, cursor: 'pointer', fontWeight: 600
+  background: '#8ab4f8', border: 'none', color: '#1a1b1e', padding: '6px 12px',
+  borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '12px'
 };
 
 export default App;
