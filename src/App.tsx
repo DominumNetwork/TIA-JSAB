@@ -3,7 +3,7 @@ import { useAPI } from '@api';
 
 function App() {
   const api = useAPI();
-  const [status, setStatus] = useState('Ready');
+  const [status] = useState('Ready');
 
   const gameHtml = [
     '<!DOCTYPE html>',
@@ -18,8 +18,8 @@ function App() {
     '    #loading-text { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 999999; font-size: 48px; font-family: cursive; font-weight: bold; pointer-events: none; background: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff); background-size: 400% 400%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: rainbow 3s ease infinite; }',
     '    @keyframes rainbow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }',
     '  </style>',
-    '  <script src="TemplateData/UnityProgress.js"></script>',
-    '  <script src="Build/UnityLoader.js"></script>',
+    '  <script src="TemplateData/UnityProgress.js"><\/script>', // Escaped slash
+    '  <script src="Build/UnityLoader.js"><\/script>',          // Escaped slash
     '</head>',
     '<body>',
     '  <div id="loading-text">LOADING...</div>',
@@ -72,7 +72,7 @@ function App() {
     '      var unityInstance = UnityLoader.instantiate("unityContainer", "Build/jsab.json", {onProgress: UnityProgress});',
     '      loadingText.style.display = "none";',
     '    })();',
-    '  </script>',
+    '  <\/script>', // Escaped slash
     '</body>',
     '</html>'
   ].join('\n');
@@ -84,7 +84,7 @@ function App() {
       fontFamily: 'Segoe UI, Roboto, sans-serif', overflow: 'hidden'
     }}>
       <div style={{ padding: '8px 20px', background: '#1a1b26', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0 }}>tiPRO: Just Shapes & Beats</h3>
+        <h3 style={{ margin: 0 }}>tiPRO: JSAB</h3>
         <button 
           onClick={() => api.alerts.show("Game logic loaded via Frame.", "System")}
           style={{ background: '#8ab4f8', border: 'none', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer' }}
