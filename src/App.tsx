@@ -5,7 +5,6 @@ function App() {
   const api = useAPI();
   const [status, setStatus] = useState('Ready');
 
-  // We use a base64-style approach or clean strings to prevent "Unterminated template literal" errors
   const gameHtml = [
     '<!DOCTYPE html>',
     '<html lang="en-us">',
