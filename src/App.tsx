@@ -95,10 +95,10 @@ function App() {
       
       <div style={{ flex: 1 }}>
         <iframe
-          title="JSAB"
-          srcDoc={gameHtml}
-          style={{ width: '100%', height: '100%', border: 'none' }}
-          sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+        title="JSAB"
+        srcDoc={gameHtml}
+        style={{ width: '100%', height: '100%', border: 'none' }}
+        sandbox="allow-scripts allow-same-origin allow-pointer-lock"
         />
       </div>
     </div>
