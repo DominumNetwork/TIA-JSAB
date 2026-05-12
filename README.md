@@ -1,5 +1,5 @@
-# TIA-Template
-Template to create TIAs for tiPRO
+# Just Shapes And Beats
+A port of JSAB as an app on TiPro
 
 ## You will be required to enable Developer Mode on tiPRO.
 ### In order to do so, you must disable cloud sync via the calendar fly-in and select real pc and not virtual folder. 
